@@ -25,16 +25,24 @@ db.once('open', function (callback) {
   console.log('MongoDB connection to ' + process.env.DB_HOST + ' succeeded')
 })
 
+app.get('/', (req, res) => {
+  res.send('Nothing here.')
+})
+
 // Fetch all shooots
 app.get('/shoots', (req, res) => {
-  // console.log(req)
-  // console.log('Query:')
   console.log(req.query)
-  // console.log('\n');
 
   var filter = { $and: [{ status: 'online' }] }
 
+  // model filter | todo: handle an array of multiple
+
+  if (req.query.modelId) {
+    filter.$and.push({ 'models.id': Number(req.query.modelId) })
+  }
+
   // orientation tags
+
   if (req.query.tags && req.query.tags.length > 0) {
     if (req.query.tags.indexOf('straight') > -1) {
       filter.$and.push({ tags: { $ne: 'gay' } })
@@ -47,9 +55,6 @@ app.get('/shoots', (req, res) => {
   if (req.query.title && req.query.title !== '') {
     filter.$text = { $search: req.query.title }
   } else {
-    // limit to shoots with photos
-    // filter.$and.push({ photos: { $exists: true } })
-
     // tags
 
     if (req.query.tags && req.query.tags.length > 0) {
@@ -80,15 +85,11 @@ app.get('/shoots', (req, res) => {
     sortQuery = { 'title': req.query.sortOrder }
   }
 
-  console.log('Filter:')
-  console.log(filter)
+  console.log('Filter: \n')
+  console.log(JSON.stringify(filter))
   console.log('\n')
 
   Shoot.find(filter)
-  // .collation({
-  //     locale: 'en_US',
-  //     strength: 3
-  // })
     .sort(sortQuery)
     .skip(Number(req.query.skip))
     .limit(12)
@@ -136,6 +137,14 @@ app.get('/models', (req, res) => {
   var fields = req.query.fields ? req.query.fields : {}
   var sortQuery = req.query.sort ? req.query.sort : {}
 
+  if (req.query.id) {
+    if (filter.$and) {
+      filter.$and.push({ id: Number(req.query.id) })
+    } else {
+      filter.$and = [{ id: Number(req.query.id) }]
+    }
+  }
+
   // todo: use querystring
 
   if (typeof fields === 'string') {
@@ -147,6 +156,7 @@ app.get('/models', (req, res) => {
   }
 
   fields._id = false
+  fields.__v = false
 
   console.log(req.query)
   // console.log(fields);
@@ -157,7 +167,7 @@ app.get('/models', (req, res) => {
   //     strength: 3
   // })
     .sort(sortQuery)
-    .limit()
+    .limit(12)
     .select(fields)
     .lean()
     .exec(function (error, models) {
