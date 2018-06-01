@@ -79,8 +79,11 @@ app.get('/shoots', (req, res) => {
   var sortQuery = {}
 
   if (req.query.sortBy === 'rating') {
-    filter.$and.push({ 'rating.avgRating': { $ne: NaN } })
+    filter.$and.push({ 'rating.avgRating': { $ne: NaN } }) // todo: unrated should be included, just at the bottom
     sortQuery = { 'rating.avgRating': req.query.sortOrder, 'rating.numRatings': req.query.sortOrder }
+  } else if (req.query.sortBy === 'votes') {
+    filter.$and.push({ 'rating.avgRating': { $ne: NaN } })
+    sortQuery = { 'rating.numRatings': req.query.sortOrder }
   } else {
     sortQuery = { 'title': req.query.sortOrder }
   }
