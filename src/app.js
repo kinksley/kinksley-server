@@ -84,6 +84,8 @@ app.get('/shoots', (req, res) => {
   } else if (req.query.sortBy === 'votes') {
     filter.$and.push({ 'rating.avgRating': { $ne: NaN } })
     sortQuery = { 'rating.numRatings': req.query.sortOrder }
+  } else if (req.query.sortBy === 'date') {
+    sortQuery = { 'date': req.query.sortOrder }
   } else {
     sortQuery = { 'title': req.query.sortOrder }
   }
