@@ -94,15 +94,48 @@ app.get('/shoots', (req, res) => {
   console.log(JSON.stringify(filter))
   console.log('\n')
 
-  Shoot.find(filter)
-    .sort(sortQuery)
+  // Shoot.find(filter)
+  //   .sort(sortQuery)
+  //   .skip(Number(req.query.skip))
+  //   .limit(12)
+  //   .lean()
+  //   .exec(function (error, shoots) {
+  //     if (error) { console.error(error) }
+  //     res.send({
+  //       shoots: shoots
+  //     })
+  //   })
+
+  Shoot.aggregate()
+    .match(filter)
     .skip(Number(req.query.skip))
     .limit(12)
-    .lean()
+    .project({
+      '_id': 0,
+      'shoots': '$$ROOT'
+    })
+    .lookup({
+      'localField': 'shoots.models',
+      'from': 'models',
+      'foreignField': 'id',
+      'as': 'models'
+    })
     .exec(function (error, shoots) {
       if (error) { console.error(error) }
+
+      var shootsRefined = []
+
+      // todo: use $mergeObjects when MongoDB 3.6 is available
+      for (const shoot of shoots) {
+        console.log(typeof shoot.models[0])
+        if (shoot.models.length > 0) {
+          shoot.shoots.models = shoot.models
+        }
+        shootsRefined.push(shoot.shoots)
+      }
+
       res.send({
-        shoots: shoots
+        shoots: shootsRefined
       })
     })
 })
