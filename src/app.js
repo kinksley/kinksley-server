@@ -14,7 +14,7 @@ app.use(morgan('combined'))
 app.use(bodyParser.json())
 app.use(cors())
 
-mongoose.set('debug', true)
+// mongoose.set('debug', true)
 
 mongoose.connect(process.env.DB_HOST, {
   user: process.env.DB_USER,
@@ -111,34 +111,19 @@ app.get('/shoots', (req, res) => {
 
   Shoot.aggregate()
     .match(filter)
-    .sort(sortQuery)    
-    .project({
-      '_id': 0,
-      'shoots': '$$ROOT'
-    })
+    .sort(sortQuery)
     .skip(Number(req.query.skip))
     .limit(12)
     .lookup({
-      'localField': 'shoots.models',
+      'localField': 'models',
       'from': 'models',
       'foreignField': 'id',
       'as': 'models'
     })
     .exec(function (error, shoots) {
       if (error) { console.error(error) }
-
-      var shootsRefined = []
-
-      // todo: use $mergeObjects when MongoDB 3.6 is available
-      for (const shoot of shoots) {
-        if (shoot.models.length > 0) {
-          shoot.shoots.models = shoot.models
-        }
-        shootsRefined.push(shoot.shoots)
-      }
-
       res.send({
-        shoots: shootsRefined
+        shoots: shoots
       })
     })
 })
