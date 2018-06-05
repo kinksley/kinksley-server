@@ -14,6 +14,8 @@ app.use(morgan('combined'))
 app.use(bodyParser.json())
 app.use(cors())
 
+mongoose.set('debug', true)
+
 mongoose.connect(process.env.DB_HOST, {
   user: process.env.DB_USER,
   pass: process.env.DB_PASS,
@@ -31,6 +33,7 @@ app.get('/', (req, res) => {
 
 // Fetch all shooots
 app.get('/shoots', (req, res) => {
+  console.log('\n Query: \n')
   console.log(req.query)
 
   var filter = { $and: [{ status: 'online' }] }
@@ -80,24 +83,24 @@ app.get('/shoots', (req, res) => {
 
   if (req.query.sortBy === 'rating') {
     filter.$and.push({ 'rating.avgRating': { $ne: NaN } }) // todo: unrated should be included, just at the bottom
-    sortQuery = { 'rating.avgRating': req.query.sortOrder, 'rating.numRatings': req.query.sortOrder }
+    sortQuery = { 'shoots.rating.avgRating': Number(req.query.sortOrder), 'shoots.rating.numRatings': Number(req.query.sortOrder) }
   } else if (req.query.sortBy === 'votes') {
     filter.$and.push({ 'rating.avgRating': { $ne: NaN } })
-    sortQuery = { 'rating.numRatings': req.query.sortOrder }
+    sortQuery = { 'shoots.rating.numRatings': Number(req.query.sortOrder) }
   } else if (req.query.sortBy === 'date') {
-    sortQuery = { 'date': req.query.sortOrder }
+    sortQuery = { 'shoots.date': Number(req.query.sortOrder) }
   } else {
-    sortQuery = { 'title': req.query.sortOrder }
+    sortQuery = { 'shoots.title': Number(req.query.sortOrder) }
   }
 
-  console.log('Filter: \n')
-  console.log(JSON.stringify(filter))
-  console.log('\n')
+  // console.log('Filter: \n')
+  // console.log(JSON.stringify(filter))
+  // console.log('\n')
 
   // Shoot.find(filter)
-  //   .sort(sortQuery)
   //   .skip(Number(req.query.skip))
   //   .limit(12)
+  //   .sort(sortQuery)
   //   .lean()
   //   .exec(function (error, shoots) {
   //     if (error) { console.error(error) }
@@ -108,12 +111,13 @@ app.get('/shoots', (req, res) => {
 
   Shoot.aggregate()
     .match(filter)
-    .skip(Number(req.query.skip))
-    .limit(12)
     .project({
       '_id': 0,
       'shoots': '$$ROOT'
     })
+    .sort(sortQuery)
+    .skip(Number(req.query.skip))
+    .limit(12)
     .lookup({
       'localField': 'shoots.models',
       'from': 'models',
@@ -127,7 +131,6 @@ app.get('/shoots', (req, res) => {
 
       // todo: use $mergeObjects when MongoDB 3.6 is available
       for (const shoot of shoots) {
-        console.log(typeof shoot.models[0])
         if (shoot.models.length > 0) {
           shoot.shoots.models = shoot.models
         }
