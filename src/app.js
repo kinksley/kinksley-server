@@ -83,14 +83,14 @@ app.get('/shoots', (req, res) => {
 
   if (req.query.sortBy === 'rating') {
     filter.$and.push({ 'rating.avgRating': { $ne: NaN } }) // todo: unrated should be included, just at the bottom
-    sortQuery = { 'shoots.rating.avgRating': Number(req.query.sortOrder), 'shoots.rating.numRatings': Number(req.query.sortOrder) }
+    sortQuery = { 'rating.avgRating': Number(req.query.sortOrder), 'rating.numRatings': Number(req.query.sortOrder) }
   } else if (req.query.sortBy === 'votes') {
     filter.$and.push({ 'rating.avgRating': { $ne: NaN } })
-    sortQuery = { 'shoots.rating.numRatings': Number(req.query.sortOrder) }
+    sortQuery = { 'rating.numRatings': Number(req.query.sortOrder) }
   } else if (req.query.sortBy === 'date') {
-    sortQuery = { 'shoots.date': Number(req.query.sortOrder) }
+    sortQuery = { 'date': Number(req.query.sortOrder) }
   } else {
-    sortQuery = { 'shoots.title': Number(req.query.sortOrder) }
+    sortQuery = { 'title': Number(req.query.sortOrder) }
   }
 
   // console.log('Filter: \n')
@@ -111,11 +111,11 @@ app.get('/shoots', (req, res) => {
 
   Shoot.aggregate()
     .match(filter)
+    .sort(sortQuery)    
     .project({
       '_id': 0,
       'shoots': '$$ROOT'
     })
-    .sort(sortQuery)
     .skip(Number(req.query.skip))
     .limit(12)
     .lookup({
