@@ -41,7 +41,7 @@ app.get('/shoots', (req, res) => {
   // model filter | todo: handle an array of multiple
 
   if (req.query.modelId) {
-    filter.$and.push({ 'models.id': Number(req.query.modelId) })
+    filter.$and.push({ 'models': Number(req.query.modelId) })
   }
 
   // orientation tags
